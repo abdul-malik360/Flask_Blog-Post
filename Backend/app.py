@@ -2,7 +2,7 @@ import hmac
 import sqlite3
 import datetime
 
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_jwt import JWT, jwt_required, current_identity
 
 
@@ -124,6 +124,33 @@ def created_blog():
             response["status_code"] = 201
             response['description'] = "Blog post added successfully"
         return response
+
+
+@app.route('/get-blogs/', methods=["GET"])
+def get_blogs():
+    response = {}
+
+    with sqlite3.connect("blog.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM post")
+
+        posts = cursor.fetchall()
+
+    response['status_code'] = 200
+    response['data'] = posts
+    return response
+
+
+@app.route("/delete-post/<int:post_id>")
+def delete_post(post_id):
+    response = {}
+    with sqlite3.connect('blog.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM post WHERE id=" + str(post_id))
+        conn.commit()
+        response['status_code'] = 204
+        response['message'] = "Blog post deleted successfully"
+    return response
 
 
 if __name__ == '__main__':
