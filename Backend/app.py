@@ -2,7 +2,7 @@ import hmac
 import sqlite3
 import datetime
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_jwt import JWT, jwt_required, current_identity
 
 
@@ -106,6 +106,7 @@ def user_registration():
 
 
 @app.route('/create-blog/', methods=["POST"])
+@jwt_required()
 def created_blog():
     response = {}
 
@@ -142,6 +143,7 @@ def get_blogs():
 
 
 @app.route("/delete-post/<int:post_id>")
+@jwt_required()
 def delete_post(post_id):
     response = {}
     with sqlite3.connect('blog.db') as conn:
@@ -151,6 +153,51 @@ def delete_post(post_id):
         response['status_code'] = 204
         response['message'] = "Blog post deleted successfully"
     return response
+
+
+@app.route('/edit-post/<int:post_id>', methods=["PUT"])
+@jwt_required()
+def edit_post(post_id):
+    response = {}
+
+    if request.method == "PUT":
+        with sqlite3.connect('blog.db') as conn:
+            incoming_data = dict(request.json)
+            put_data = {}
+
+            if incoming_data.get("title") is not None:
+                put_data["title"] = incoming_data.get("title")
+                with sqlite3.connect('blog.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE post SET title =? WHERE id=?", (put_data["title"], post_id))
+                    conn.commit()
+                    response['message'] = "Update was successful"
+                    response['status_code'] = 200
+            if incoming_data.get("content") is not None:
+                put_data['content'] = incoming_data.get('content')
+
+                with sqlite3.connect('blog.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE post SET content =? WHERE id=?", (put_data["content"], post_id))
+                    conn.commit()
+                    response['content'] = "Content Update was successful"
+                    response['status_code'] = 200
+
+    return response
+
+
+@app.route('/get-post/<int:post_id>', methods=["GET"])
+def get_post(post_id):
+    response = {}
+
+    with sqlite3.connect('blog.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM post WHERE id=" + str(post_id))
+
+        response["status_code"] = 200
+        response["description"] = "Blog post retrieved successfully"
+        response["data"] = cursor.fetchone()
+    return jsonify(response)
 
 
 if __name__ == '__main__':
