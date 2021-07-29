@@ -2,7 +2,7 @@ import hmac
 import sqlite3
 import datetime
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_jwt import JWT, jwt_required, current_identity
 
 
@@ -74,6 +74,11 @@ app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 
 jwt = JWT(app, authenticate, identity)
+
+
+@app.route('/')
+def default():
+    return render_template('default.html')
 
 
 @app.route('/protected')
